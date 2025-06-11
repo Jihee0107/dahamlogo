@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>다함 로고 편집기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Gowun Dodum', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #E0F7D4;
+      margin: 0;
+    }
+    .container {
+      width: 90%;
+      max-width: 800px;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      text-align: center;
+    }
+    h1 {
+      color: #81C784;
+      margin-bottom: 20px;
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .upload-box {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .upload-box input[type="file"] {
+      display: none;
+    }
+    .upload-box label {
+      font-size: 1.2em;
+      cursor: pointer;
+      color: #007BFF;
+    }
+    .upload-box p {
+      margin: 10px 0;
+      color: #555;
+    }
+    .btn {
+      padding: 15px 30px;
+      font-size: 1em;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      margin: 5px;
+      font-weight: bold;
+    }
+    .btn-process {
+      background-color: #28A745;
+    }
+    .btn-reset {
+      background-color: #DC3545;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: grey;
+    }
+    .password-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .password-container input[type="password"] {
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .password-container button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      background-color: #007BFF;
+    }
+  </style>
+</head>
+<body>
+  <div id="password-screen" class="container">
+    <h1>비밀번호 입력</h1>
+    <div class="password-container">
+      <input type="password" id="password-input" placeholder="비밀번호 입력" />
+      <button onclick="checkPassword()">확인</button>
+    </div>
+  </div>
+
+  <div id="main-content" class="container" style="display: none;">
+    <h1>다함 로고 편집기</h1>
+    <div class="upload-box">
+      <input type="file" id="file-input" multiple />
+      <label for="file-input">파일 선택</label>
+      <p id="file-count">선택된 파일 없음</p>
+    </div>
+    <button class="btn btn-process" onclick="processImages()">로고 추가하기</button>
+    <button class="btn btn-reset" onclick="resetSelection()">초기화</button>
+    <div class="footer"><p>by_지희</p></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script>
+    const fileInput = document.getElementById('file-input');
+    const fileCount = document.getElementById('file-count');
+    let files = [];
+
+    fileInput.addEventListener('change', (event) => {
+      files = Array.from(event.target.files);
+      fileCount.textContent = `${files.length}장의 사진이 추가됨.`;
+    });
+
+    function resetSelection() {
+      fileInput.value = '';
+      files = [];
+      fileCount.textContent = '선택된 파일 없음';
+    }
+
+    async function processImages() {
+      const zip = new JSZip();
+      const logoImage = await fetch('https://raw.githubusercontent.com/Jihee0107/dahamlogo/main/%EB%8B%A4%ED%95%A8%EB%A1%9C%EA%B3%A0.png')
+        .then(response => response.blob());
+
+      const logoURL = URL.createObjectURL(logoImage);
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const img = await loadImage(URL.createObjectURL(file));
+        const logo = await loadImage(logoURL);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 1080;
+        canvas.height = 1080;
+
+        // 원본 이미지
+        ctx.drawImage(img, 0, 0, 1080, 1080);
+
+        // 다함 로고: 오른쪽 하단에 300x300 크기로 삽입
+        ctx.drawImage(logo, 1080 - 320, 1080 - 320, 300, 300);
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve));
+        zip.file(`image_${i + 1}.png`, blob);
+      }
+
+      zip.generateAsync({ type: 'blob' }).then((content) => {
+        saveAs(content, 'daham_images_with_logo.zip');
+      });
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.src = src;
+      });
+    }
+
+    function checkPassword() {
+      const passwordInput = document.getElementById('password-input');
+      if (passwordInput.value === '0107') {
+        document.getElementById('password-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+      } else {
+        alert('비밀번호가 잘못되었습니다.');
+      }
+    }
+  </script>
+</body>
+</html>
